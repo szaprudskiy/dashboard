@@ -28,7 +28,8 @@ const Login = ({ setIsAuthenticated }) => {
 
       console.log('Успешный вход:', response.data)
       setIsAuthenticated(true)
-      navigate('/')
+      localStorage.setItem('isAuthenticated', 'true')
+      navigate('/dashboard')
     } catch (error) {
       setError('Неверные учетные данные')
     }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   BrowserRouter as Router,
   Route,
@@ -11,7 +11,19 @@ import Register from './components/auth/Register'
 import Dashboard from './components/admin/Dashboard'
 
 const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    localStorage.getItem('isAuthenticated') === 'true'
+  )
+
+  useEffect(() => {
+    // Проверяем состояние авторизации в localStorage
+    const savedAuth = localStorage.getItem('isAuthenticated')
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true)
+    } else {
+      setIsAuthenticated(false)
+    }
+  }, [])
 
   return (
     <Router>
@@ -22,7 +34,7 @@ const App = () => {
           element={<Login setIsAuthenticated={setIsAuthenticated} />}
         />
         {isAuthenticated ? (
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         ) : (
           <Route path="/" element={<Navigate replace to="/login" />} />
         )}
