@@ -25,18 +25,47 @@ const App = () => {
     }
   }, [])
 
+  const handleLogout = () => {
+    localStorage.setItem('isAuthenticated', 'false')
+    setIsAuthenticated(false)
+  }
+
   return (
     <Router>
       <Routes>
-        <Route path="/register" element={<Register />} />
+        {/* Обрабатываем корневой путь */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
         <Route
           path="/login"
-          element={<Login setIsAuthenticated={setIsAuthenticated} />}
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" />
+            ) : (
+              <Login setIsAuthenticated={setIsAuthenticated} />
+            )
+          }
         />
+        {!isAuthenticated && <Route path="/register" element={<Register />} />}
+        {isAuthenticated && (
+          <Route path="/register" element={<Navigate to="/dashboard" />} />
+        )}
         {isAuthenticated ? (
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/dashboard"
+            element={<Dashboard handleLogout={handleLogout} />}
+          />
         ) : (
-          <Route path="/" element={<Navigate replace to="/login" />} />
+          // Добавляем корневой маршрут, чтобы совпадать с любым путем и перенаправлять на /login, если не залогинен
+          <Route path="*" element={<Navigate to="/login" />} />
         )}
       </Routes>
     </Router>
