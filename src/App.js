@@ -60,7 +60,7 @@ const App = () => {
         )}
         {isAuthenticated ? (
           <Route
-            path="/dashboard"
+            path="/dashboard/*"
             element={<Dashboard handleLogout={handleLogout} />}
           />
         ) : (
