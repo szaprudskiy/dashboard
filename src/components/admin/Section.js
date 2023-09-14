@@ -15,6 +15,7 @@ const Section = () => {
           }
         />
         <Route path="/:sectionId" element={<SectionEditor />} />
+        <Route path="/dashboard/new" element={<SectionEditor />} />
       </Routes>
     </div>
   )

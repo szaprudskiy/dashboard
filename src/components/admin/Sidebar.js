@@ -28,6 +28,14 @@ const Sidebar = () => {
             <Link to={`/dashboard/${section._id}`}>{section.title}</Link>
           </li>
         ))}
+        <li className="cursor-pointer mb-2 hover:text-blue-500">
+          <Link
+            to="/dashboard/new"
+            className="bg-blue-500 text-white px-2 py-1 rounded mt-4 hover:bg-blue-600"
+          >
+            Create New Section
+          </Link>
+        </li>
       </ul>
     </div>
   )
