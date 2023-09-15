@@ -1,23 +1,32 @@
-import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { updateSections } from '../../utils/sidebarSlice'
 import axios from 'axios'
+import { Link } from 'react-router-dom'
 
 const Sidebar = () => {
-  const [sections, setSections] = useState([])
+  const sections = useSelector((state) => state.sidebar.sections)
+  const dispatch = useDispatch()
 
   useEffect(() => {
-    axios
-      .get('http://localhost:4001/sections')
-      .then((response) => {
-        setSections(response.data.sections)
-      })
-      .catch((error) => {
+    const loadSections = async () => {
+      try {
+        const response = await axios.get('http://localhost:4001/sections')
+        const loadedSections = response.data.sections
+
+        // Обновление состояния хранилища Redux с помощью dispatch
+        dispatch(updateSections(loadedSections))
+      } catch (error) {
         console.error('Ошибка при загрузке секций', error)
-      })
-  }, [])
+      }
+    }
+
+    loadSections()
+  }, [dispatch])
 
   return (
     <div className="w-1/4 bg-gray-200 p-4">
+      {/* Отобразите список секций */}
       <h2 className="text-xl font-semibold mb-4">Sections</h2>
       <ul>
         {sections.map((section) => (
