@@ -28,11 +28,11 @@ const Register = () => {
         'http://localhost:4001/register',
         formData
       )
-
       if (response) {
         setSuccessMessage(
           'Регистрация прошла успешно! Пожалуйста, перейдите на страницу авторизации.'
         )
+
         setError(null)
 
         setFormData({

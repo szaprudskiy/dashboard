@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { updateSections } from '../../utils/sidebarSlice'
+import { updateSections } from '../../redux/sidebarSlice'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 
@@ -11,7 +11,9 @@ const Sidebar = () => {
   useEffect(() => {
     const loadSections = async () => {
       try {
-        const response = await axios.get('http://localhost:4001/sections')
+        const response = await axios.get('http://localhost:4001/sections', {
+          withCredentials: true,
+        })
         const loadedSections = response.data.sections
 
         // Обновление состояния хранилища Redux с помощью dispatch
