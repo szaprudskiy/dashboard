@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useDispatch } from 'react-redux'
-import { updateSections } from '../../utils/sidebarSlice'
+import { updateSections } from '../../redux/sidebarSlice'
 
 const SectionEditor = () => {
   const { sectionId } = useParams()
@@ -16,10 +16,12 @@ const SectionEditor = () => {
   useEffect(() => {
     if (sectionId === 'new') {
       setIsNewSection(true)
-      setEditedSection({ title: '', fieldF: '', fieldS: '', date: '' })
+      setEditedSection({ title: '', fieldF: '', fieldS: '' })
     } else {
       axios
-        .get(`http://localhost:4001/sections/${sectionId}`)
+        .get(`http://localhost:4001/sections/${sectionId}`, {
+          withCredentials: true,
+        })
         .then((response) => {
           setSelectedSection(response.data.section)
           setEditedSection(response.data.section)
@@ -40,7 +42,9 @@ const SectionEditor = () => {
     if (editedSection && editedSection.title && editedSection.fieldF) {
       if (isNewSection) {
         axios
-          .post('http://localhost:4001/create', editedSection)
+          .post('http://localhost:4001/create', editedSection, {
+            withCredentials: true,
+          })
           .then((response) => {
             console.log('Новая секция успешно создана', response.data.section)
             // После успешного создания, загрузите обновленный список секций
@@ -52,7 +56,9 @@ const SectionEditor = () => {
           })
       } else {
         axios
-          .put(`http://localhost:4001/section/${sectionId}`, editedSection)
+          .put(`http://localhost:4001/section/${sectionId}`, editedSection, {
+            withCredentials: true,
+          })
           .then((response) => {
             console.log('Секция успешно обновлена', response.data.section)
             // После успешного обновления, загрузите обновленный список секций
@@ -69,7 +75,9 @@ const SectionEditor = () => {
   const handleDeleteSection = () => {
     if (sectionId) {
       axios
-        .delete(`http://localhost:4001/delete/${sectionId}`)
+        .delete(`http://localhost:4001/delete/${sectionId}`, {
+          withCredentials: true,
+        })
         .then((response) => {
           console.log('Секция успешно удалена')
           // После удаления секции, вы можете выполнить перенаправление на другую страницу
@@ -86,7 +94,9 @@ const SectionEditor = () => {
   const loadSections = async () => {
     try {
       // Выполните запрос Axios для получения секций с сервера
-      const response = await axios.get('http://localhost:4001/sections')
+      const response = await axios.get('http://localhost:4001/sections', {
+        withCredentials: true,
+      })
       const loadedSections = response.data.sections
 
       // Обновите состояние хранилища Redux с помощью dispatch

@@ -24,7 +24,13 @@ const Login = ({ setIsAuthenticated }) => {
     e.preventDefault()
 
     try {
-      const response = await axios.post('http://localhost:4001/login', formData)
+      const response = await axios.post(
+        'http://localhost:4001/login',
+        formData,
+        {
+          withCredentials: true,
+        }
+      )
 
       console.log('Успешный вход:', response.data)
       setIsAuthenticated(true)

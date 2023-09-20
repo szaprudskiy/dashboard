@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
   sections: [], // массив секций
+  userId: null,
 }
 
 const sidebarSlice = createSlice({
@@ -11,8 +12,11 @@ const sidebarSlice = createSlice({
     updateSections: (state, action) => {
       state.sections = action.payload
     },
+    clearSections: (state) => {
+      state.sections = []
+    },
   },
 })
 
-export const { updateSections } = sidebarSlice.actions
+export const { updateSections, clearSections } = sidebarSlice.actions
 export default sidebarSlice.reducer
