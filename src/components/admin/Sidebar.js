@@ -11,7 +11,7 @@ const Sidebar = () => {
   useEffect(() => {
     const loadSections = async () => {
       try {
-        const response = await axios.get('http://localhost:4001/sections', {
+        const response = await axios.get('http://localhost:4004/sections', {
           withCredentials: true,
         })
         const loadedSections = response.data.sections

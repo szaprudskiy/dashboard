@@ -19,7 +19,7 @@ const SectionEditor = () => {
       setEditedSection({ title: '', fieldF: '', fieldS: '' })
     } else {
       axios
-        .get(`http://localhost:4001/sections/${sectionId}`, {
+        .get(`http://localhost:4004/sections/${sectionId}`, {
           withCredentials: true,
         })
         .then((response) => {
@@ -42,7 +42,7 @@ const SectionEditor = () => {
     if (editedSection && editedSection.title && editedSection.fieldF) {
       if (isNewSection) {
         axios
-          .post('http://localhost:4001/create', editedSection, {
+          .post('http://localhost:4004/create', editedSection, {
             withCredentials: true,
           })
           .then((response) => {
@@ -56,7 +56,7 @@ const SectionEditor = () => {
           })
       } else {
         axios
-          .put(`http://localhost:4001/section/${sectionId}`, editedSection, {
+          .put(`http://localhost:4004/section/${sectionId}`, editedSection, {
             withCredentials: true,
           })
           .then((response) => {
@@ -75,7 +75,7 @@ const SectionEditor = () => {
   const handleDeleteSection = () => {
     if (sectionId) {
       axios
-        .delete(`http://localhost:4001/delete/${sectionId}`, {
+        .delete(`http://localhost:4004/delete/${sectionId}`, {
           withCredentials: true,
         })
         .then((response) => {
@@ -94,7 +94,7 @@ const SectionEditor = () => {
   const loadSections = async () => {
     try {
       // Выполните запрос Axios для получения секций с сервера
-      const response = await axios.get('http://localhost:4001/sections', {
+      const response = await axios.get('http://localhost:4004/sections', {
         withCredentials: true,
       })
       const loadedSections = response.data.sections

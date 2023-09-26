@@ -25,7 +25,7 @@ const Register = () => {
 
     try {
       const response = await axios.post(
-        'http://localhost:4001/register',
+        'http://localhost:4004/register',
         formData
       )
       if (response) {
