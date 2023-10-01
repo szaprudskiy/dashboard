@@ -11,7 +11,7 @@ const Section = () => {
         <Route
           path="/"
           element={
-            <p>Select a section from the sidebar or create a new one.</p>
+            <p>Select a account from the sidebar or create a new one.</p>
           }
         />
         <Route path="/:sectionId" element={<SectionEditor />} />

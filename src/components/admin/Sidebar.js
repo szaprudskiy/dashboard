@@ -27,9 +27,8 @@ const Sidebar = () => {
   }, [dispatch])
 
   return (
-    <div className="w-1/4 bg-gray-200 p-4">
-      {/* Отобразите список секций */}
-      <h2 className="text-xl font-semibold mb-4">Sections</h2>
+    <div className="w-1/4 bg-gray-200 p-4 sidebar">
+      <h2 className="text-xl font-semibold mb-4">Accounts</h2>
       <ul>
         {sections.map((section) => (
           <li
@@ -44,7 +43,7 @@ const Sidebar = () => {
             to="/dashboard/new"
             className="bg-blue-500 text-white px-2 py-1 rounded mt-4 hover:bg-blue-600"
           >
-            Create New Section
+            Create New Account
           </Link>
         </li>
       </ul>
