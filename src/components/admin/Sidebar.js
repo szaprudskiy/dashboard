@@ -4,7 +4,7 @@ import { updateSections } from '../../redux/sidebarSlice'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 
-const Sidebar = () => {
+const Sidebar = ({ handleLogout }) => {
   const sections = useSelector((state) => state.sidebar.sections)
   const dispatch = useDispatch()
 
@@ -47,6 +47,9 @@ const Sidebar = () => {
           </Link>
         </li>
       </ul>
+      <button className="logout-button" onClick={handleLogout}>
+        Logout
+      </button>
     </div>
   )
 }

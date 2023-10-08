@@ -20,6 +20,11 @@ const SectionEditor = () => {
   const [replyInput, setReplyInput] = useState('')
   const [showComments, setShowComments] = useState(false)
 
+  const [autoReplyText, setAutoReplyText] = useState('')
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false)
+
+  const [showErrorMessage, setShowErrorMessage] = useState(false)
+
   const wrongCommentNotify = () =>
     toast.error('Вы уже отправляли сообщение на этот комментарий!', {
       position: 'top-right',
@@ -55,6 +60,8 @@ const SectionEditor = () => {
       setReplyTo(null)
       setReplyInput('')
       setShowComments(false)
+      setAutoReplyText('')
+      setAutoReplyEnabled(false)
     } else {
       axios
         .get(`http://localhost:4004/sections/${sectionId}`, {
@@ -64,6 +71,8 @@ const SectionEditor = () => {
           setSelectedSection(response.data.section)
           setEditedSection(response.data.section)
           setIsNewSection(false)
+          setAutoReplyText(response.data.section.autoReplyText)
+          setAutoReplyEnabled(response.data.section.autoReplyEnabled)
         })
         .catch((error) => {
           console.error('Ошибка при загрузке секции', error)
@@ -128,17 +137,104 @@ const SectionEditor = () => {
   //     })
   // }
 
+  useEffect(() => {
+    const fetchCommentsAndSendAutoReply = async () => {
+      if (autoReplyEnabled && autoReplyText && selectedSection) {
+        try {
+          const response = await axios.get(
+            `https://graph.facebook.com/v17.0/${selectedSection.pageId}_${selectedSection.postId}/comments?access_token=${selectedSection.token}`
+          )
+
+          // Массив для хранения промисов запросов на проверку комментариев
+          const checkCommentPromises = response.data.data.map(
+            async (comment) => {
+              try {
+                const existingCommentResponse = await axios.post(
+                  'http://localhost:4004/checkcomment',
+                  {
+                    commentId: comment.id,
+                  }
+                )
+                return existingCommentResponse.data.comment
+              } catch (error) {
+                console.error('Ошибка при проверке комментария', error)
+                return null
+              }
+            }
+          )
+
+          // Дожидаемся завершения всех запросов на проверку комментариев
+          const existingComments = await Promise.all(checkCommentPromises)
+
+          for (let i = 0; i < response.data.data.length; i++) {
+            const comment = response.data.data[i]
+            const existingComment = existingComments[i]
+
+            console.log(comment)
+
+            if (existingComment !== null) {
+              // Если комментарий уже существует в базе данных, показываем уведомление
+              console.log(
+                `Комментарий с commentId ${comment.id} уже существует в базе данных.`
+              )
+              wrongCommentNotify()
+            } else {
+              // Отправляем автоматический ответ
+              await axios.post(
+                `https://graph.facebook.com/v17.0/${comment.id}/comments`,
+                {
+                  message: autoReplyText,
+                },
+                {
+                  params: {
+                    access_token: selectedSection.token,
+                  },
+                }
+              )
+
+              // Сохраняем информацию о комментарии в базе данных
+              await axios.post('http://localhost:4004/comment', {
+                postId: selectedSection.postId,
+                commentId: comment.id,
+                message: autoReplyText,
+                autoReply: true,
+              })
+
+              // Обновляем состояние с отправленными комментариями
+              setComments((prevComments) => [...prevComments, comment])
+              successCommentNotify()
+            }
+          }
+        } catch (error) {
+          console.error('Ошибка при получении комментариев', error)
+        }
+      }
+    }
+
+    const intervalId = setInterval(() => {
+      fetchCommentsAndSendAutoReply()
+    }, 10000)
+
+    return () => clearInterval(intervalId)
+  }, [autoReplyEnabled, autoReplyText, selectedSection, comments])
+
   const handleSendReply = async () => {
     if (!replyInput || !replyTo) {
       return // Не отправляем пустой ответ
     }
 
     axios
-      .post('http://localhost:4004/comment', {
-        postId: selectedSection.postId,
-        commentId: replyTo.id,
-        message: replyInput,
-      })
+      .post(
+        'http://localhost:4004/comment',
+        {
+          postId: selectedSection.postId,
+          commentId: replyTo.id,
+          message: replyInput,
+        },
+        {
+          withCredentials: true,
+        }
+      )
       .then((response) => {
         console.log('exist response', response)
         if (replyTo.id !== response.data.commentId) {
@@ -178,7 +274,11 @@ const SectionEditor = () => {
       })
   }
 
-  const handleSaveSection = () => {
+  const handleSaveSection = async () => {
+    // if (!autoReplyEnabled || !autoReplyText) {
+    //   setShowErrorMessage(true)
+    //   return
+    // }
     if (
       editedSection &&
       editedSection.title &&
@@ -186,35 +286,39 @@ const SectionEditor = () => {
       editedSection.postId &&
       editedSection.token
     ) {
-      if (isNewSection) {
-        axios
-          .post('http://localhost:4004/create', editedSection, {
-            withCredentials: true,
-          })
-          .then((response) => {
-            console.log('Новая секция успешно создана', response.data.section)
-            // После успешного создания, загрузите обновленный список секций
-            loadSections()
-            navigate('/dashboard')
-          })
-          .catch((error) => {
-            console.error('Ошибка при создании секции', error)
-          })
-      } else {
-        axios
-          .put(`http://localhost:4004/section/${sectionId}`, editedSection, {
-            withCredentials: true,
-          })
-          .then((response) => {
-            console.log('Секция успешно обновлена', response.data.section)
-            // После успешного обновления, загрузите обновленный список секций
-            loadSections()
-            navigate('/dashboard')
-          })
-          .catch((error) => {
-            console.error('Ошибка при обновлении секции', error)
-          })
+      const sectionData = {
+        ...editedSection,
+        autoReplyText: autoReplyText,
+        autoReplyEnabled: autoReplyEnabled,
       }
+
+      try {
+        let response
+        if (isNewSection) {
+          response = await axios.post(
+            'http://localhost:4004/create',
+            sectionData,
+            {
+              withCredentials: true,
+            }
+          )
+        } else {
+          response = await axios.put(
+            `http://localhost:4004/section/${sectionId}`,
+            sectionData,
+            {
+              withCredentials: true,
+            }
+          )
+        }
+        console.log('Секция успешно сохранена', response.data.section)
+        loadSections()
+        navigate('/dashboard')
+      } catch (error) {
+        console.error('Ошибка при сохранении секции', error)
+      }
+    } else {
+      console.error('Не все обязательные поля заполнены')
     }
   }
 
@@ -305,6 +409,28 @@ const SectionEditor = () => {
             />
             {!editedSection.token && (
               <p className="text-red-500">Поле token не может быть пустым</p>
+            )}
+          </div>
+          <div className="mt-4">
+            <h2>Auto Reply:</h2>
+            <textarea
+              value={autoReplyText}
+              onChange={(e) => setAutoReplyText(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md"
+              rows="4"
+            />
+            <label className="block mt-2">
+              <input
+                type="checkbox"
+                checked={autoReplyEnabled}
+                onChange={() => setAutoReplyEnabled(!autoReplyEnabled)}
+              />
+              Enable Auto Reply
+            </label>
+            {showErrorMessage && (
+              <p className="text-red-500">
+                Пожалуйста, укажите текст и галочку для запуска автоответов
+              </p>
             )}
           </div>
           <button
