@@ -11,9 +11,12 @@ const Sidebar = ({ handleLogout }) => {
   useEffect(() => {
     const loadSections = async () => {
       try {
-        const response = await axios.get('http://localhost:4004/sections', {
-          withCredentials: true,
-        })
+        const response = await axios.get(
+          'https://panel.stat-gurteam.info/api/sections',
+          {
+            withCredentials: true,
+          }
+        )
         const loadedSections = response.data.sections
 
         // Обновление состояния хранилища Redux с помощью dispatch

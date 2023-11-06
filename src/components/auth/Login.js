@@ -25,7 +25,7 @@ const Login = ({ setIsAuthenticated }) => {
 
     try {
       const response = await axios.post(
-        'http://localhost:4004/login',
+        'https://panel.stat-gurteam.info/api/login',
         formData,
         {
           withCredentials: true,
