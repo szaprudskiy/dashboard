@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { useDispatch } from 'react-redux'
-import { updateSections } from '../../redux/sidebarSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import {
+  selectIntervalId,
+  setIntervalId,
+  clearIntervalId,
+  selectIntervalIdOpenAI,
+  setIntervalIdOpenAI,
+  clearIntervalIdOpenAI,
+  updateSections,
+} from '../../state/sidebarSlice'
 import '../../../src/index.css'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { createAsyncThunk } from '@reduxjs/toolkit'
 
 const SectionEditor = () => {
   const { sectionId } = useParams()
@@ -22,6 +31,8 @@ const SectionEditor = () => {
 
   const [autoReplyText, setAutoReplyText] = useState('')
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false)
+
+  const [openAIAutoReplyEnabled, setOpenAIAutoReplyEnabled] = useState(false)
 
   const [showErrorMessage, setShowErrorMessage] = useState(false)
 
@@ -62,6 +73,7 @@ const SectionEditor = () => {
       setShowComments(false)
       setAutoReplyText('')
       setAutoReplyEnabled(false)
+      setOpenAIAutoReplyEnabled(false)
     } else {
       axios
         .get(`http://localhost:4004/sections/${sectionId}`, {
@@ -73,6 +85,9 @@ const SectionEditor = () => {
           setIsNewSection(false)
           setAutoReplyText(response.data.section.autoReplyText)
           setAutoReplyEnabled(response.data.section.autoReplyEnabled)
+          setOpenAIAutoReplyEnabled(
+            response.data.section.openAIAutoReplyEnabled
+          )
         })
         .catch((error) => {
           console.error('Ошибка при загрузке секции', error)
@@ -107,47 +122,23 @@ const SectionEditor = () => {
     setEditedSection(updatedSection)
   }
 
-  // const handleSendReply = () => {
-  //   if (!replyInput || !replyTo) {
-  //     return // Не отправляем пустой ответ
-  //   }
+  const intervalId = useSelector(selectIntervalId)
 
-  //   axios
-  //     .post(
-  //       `https://graph.facebook.com/v17.0/${replyTo.id}/comments`,
-  //       {
-  //         message: replyInput,
-  //       },
-  //       {
-  //         params: {
-  //           access_token: selectedSection.token,
-  //         },
-  //       }
-  //     )
-  //     .then((response) => {
-  //       // Если ответ успешно отправлен, сбрасываем состояния replyTo и replyInput
-  //       setReplyTo(null)
-  //       setReplyInput('')
-
-  //       // Обновляем список комментариев, добавив новый комментарий из ответа
-  //       setComments((prevComments) => [...prevComments, response.data])
-  //     })
-  //     .catch((error) => {
-  //       console.error('Ошибка при отправке ответа', error)
-  //     })
-  // }
-
-  useEffect(() => {
-    const fetchCommentsAndSendAutoReply = async () => {
+  const fetchCommentsAndSendAutoReply = createAsyncThunk(
+    'sidebar/fetchCommentsAndSendAutoReply',
+    async () => {
       if (autoReplyEnabled && autoReplyText && selectedSection) {
         try {
           const response = await axios.get(
             `https://graph.facebook.com/v17.0/${selectedSection.pageId}_${selectedSection.postId}/comments?access_token=${selectedSection.token}`
           )
 
+          console.log('1', response)
+          console.log('2', response.data.data)
           // Массив для хранения промисов запросов на проверку комментариев
           const checkCommentPromises = response.data.data.map(
             async (comment) => {
+              console.log('comment', comment)
               try {
                 const existingCommentResponse = await axios.post(
                   'http://localhost:4004/checkcomment',
@@ -155,7 +146,9 @@ const SectionEditor = () => {
                     commentId: comment.id,
                   }
                 )
-                return existingCommentResponse.data.comment
+                console.log('3', existingCommentResponse)
+                console.log('4', existingCommentResponse.data)
+                return existingCommentResponse.data
               } catch (error) {
                 console.error('Ошибка при проверке комментария', error)
                 return null
@@ -177,7 +170,7 @@ const SectionEditor = () => {
               console.log(
                 `Комментарий с commentId ${comment.id} уже существует в базе данных.`
               )
-              wrongCommentNotify()
+              // wrongCommentNotify()
             } else {
               // Отправляем автоматический ответ
               await axios.post(
@@ -210,13 +203,145 @@ const SectionEditor = () => {
         }
       }
     }
+  )
 
-    const intervalId = setInterval(() => {
-      fetchCommentsAndSendAutoReply()
-    }, 10000)
+  useEffect(() => {
+    if (autoReplyEnabled && selectedSection) {
+      if (!intervalId) {
+        const id = setInterval(() => {
+          dispatch(fetchCommentsAndSendAutoReply())
+        }, 5000)
+        dispatch(setIntervalId(id))
+        console.log('Запущен интервал', id)
+      }
+    } else {
+      if (intervalId) {
+        console.log('Остановлен интервал', intervalId)
+        clearInterval(intervalId)
+        dispatch(clearIntervalId())
+      }
+    }
+  }, [autoReplyEnabled, selectedSection, intervalId, dispatch])
 
-    return () => clearInterval(intervalId)
-  }, [autoReplyEnabled, autoReplyText, selectedSection, comments])
+  const intervalIdOpenAI = useSelector(selectIntervalIdOpenAI)
+  const fetchCommentsAndSendAutoReplyApi = createAsyncThunk(
+    'sidebar/fetchCommentsAndSendAutoReplyApi',
+    async () => {
+      if (openAIAutoReplyEnabled && selectedSection) {
+        try {
+          const response = await axios.get(
+            `https://graph.facebook.com/v17.0/${selectedSection.pageId}_${selectedSection.postId}/comments?access_token=${selectedSection.token}`
+          )
+
+          // Массив для хранения промисов запросов на проверку комментариев
+          const checkCommentPromises = response.data.data.map(
+            async (comment) => {
+              try {
+                const existingCommentResponse = await axios.post(
+                  'http://localhost:4004/checkcomment',
+                  {
+                    commentId: comment.id,
+                  }
+                )
+
+                return existingCommentResponse.data
+              } catch (error) {
+                console.error('Ошибка при проверке комментария', error)
+                return null
+              }
+            }
+          )
+
+          console.log('checkCommentPromises', checkCommentPromises)
+          // Дожидаемся завершения всех запросов на проверку комментариев
+          const existingComments = await Promise.all(checkCommentPromises)
+
+          for (let i = 0; i < response.data.data.length; i++) {
+            const comment = response.data.data[i]
+            const existingComment = existingComments[i]
+
+            console.log('1', existingComments)
+            console.log('2', existingComment)
+
+            if (existingComment === null) {
+              // Если комментарий не существует в базе данных, отправляем автоматический ответ
+              const openaiResponse = await axios.post(
+                // https://api.openai.com/v1/engines/gpt-3.5-turbo-16k/completions
+                // https://api.openai.com/v1/engines/text-davinci-002/completions
+                'https://api.openai.com/v1/engines/text-davinci-003/completions',
+                {
+                  prompt: comment.message,
+                  max_tokens: 500,
+                  temperature: 0.7,
+                  top_p: 1.0,
+                  n: 1,
+                  stop: null,
+                },
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer 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`,
+                  },
+                }
+              )
+
+              const openaiReply = openaiResponse.data.choices[0].text.trim()
+              console.log(openaiReply)
+
+              // Отправляем автоматический ответ
+              await axios.post(
+                `https://graph.facebook.com/v17.0/${comment.id}/comments`,
+                {
+                  message: openaiReply,
+                },
+                {
+                  params: {
+                    access_token: selectedSection.token,
+                  },
+                }
+              )
+
+              // Сохраняем информацию о комментарии в базе данных
+              await axios.post('http://localhost:4004/comment', {
+                postId: selectedSection.postId,
+                commentId: comment.id,
+                message: openaiReply,
+                openAIautoReply: true,
+              })
+
+              // Обновляем состояние с отправленными комментариями
+              setComments((prevComments) => [...prevComments, comment])
+              successCommentNotify()
+            } else {
+              // Если комментарий уже существует в базе данных, показываем уведомление
+              console.log(
+                `Комментарий с commentId ${comment.id} уже существует в базе данных.`
+              )
+              wrongCommentNotify()
+            }
+          }
+        } catch (error) {
+          console.error('Ошибка при получении комментариев', error)
+        }
+      }
+    }
+  )
+
+  if (openAIAutoReplyEnabled) {
+    if (!intervalIdOpenAI) {
+      const id = setInterval(() => {
+        dispatch(fetchCommentsAndSendAutoReplyApi()) // рекурсивный вызов функции через интервал
+      }, 5000) // интервал в миллисекундах (5 секунд в данном случае)
+      dispatch(setIntervalIdOpenAI(id)) // сохраняем ID интервала в Redux store
+      console.log('1', id)
+    }
+  } else {
+    if (intervalIdOpenAI) {
+      console.log('2', intervalIdOpenAI)
+      clearInterval(intervalIdOpenAI) // очищаем интервал, если autoReplyEnabled стало false
+      dispatch(clearIntervalIdOpenAI()) // очищаем ID интервала в Redux store
+    }
+  }
 
   const handleSendReply = async () => {
     if (!replyInput || !replyTo) {
@@ -266,7 +391,7 @@ const SectionEditor = () => {
               console.error('Ошибка при отправке ответа в Facebook', error)
             })
         } else {
-          wrongCommentNotify()
+          // wrongCommentNotify()
         }
       })
       .catch((error) => {
@@ -275,10 +400,6 @@ const SectionEditor = () => {
   }
 
   const handleSaveSection = async () => {
-    // if (!autoReplyEnabled || !autoReplyText) {
-    //   setShowErrorMessage(true)
-    //   return
-    // }
     if (
       editedSection &&
       editedSection.title &&
@@ -290,6 +411,7 @@ const SectionEditor = () => {
         ...editedSection,
         autoReplyText: autoReplyText,
         autoReplyEnabled: autoReplyEnabled,
+        openAIAutoReplyEnabled: openAIAutoReplyEnabled,
       }
 
       try {
@@ -412,7 +534,7 @@ const SectionEditor = () => {
             )}
           </div>
           <div className="mt-4">
-            <h2>Auto Reply:</h2>
+            <h2>Auto Reply Message:</h2>
             <textarea
               value={autoReplyText}
               onChange={(e) => setAutoReplyText(e.target.value)}
@@ -425,13 +547,25 @@ const SectionEditor = () => {
                 checked={autoReplyEnabled}
                 onChange={() => setAutoReplyEnabled(!autoReplyEnabled)}
               />
-              Enable Auto Reply
+              Enable Auto Reply via message
             </label>
             {showErrorMessage && (
               <p className="text-red-500">
                 Пожалуйста, укажите текст и галочку для запуска автоответов
               </p>
             )}
+          </div>
+          <div className="mt-4">
+            <label className="block mt-2">
+              <input
+                type="checkbox"
+                checked={openAIAutoReplyEnabled}
+                onChange={() =>
+                  setOpenAIAutoReplyEnabled(!openAIAutoReplyEnabled)
+                }
+              />
+              Enable Auto Reply via OpenAI
+            </label>
           </div>
           <button
             onClick={handleSaveSection}

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { updateSections } from '../../redux/sidebarSlice'
+import { updateSections } from '../../state/sidebarSlice'
 import axios from 'axios'
 import { Link } from 'react-router-dom'
 
