@@ -280,7 +280,7 @@ const SectionEditor = () => {
                 {
                   headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer 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`,
+                    Authorization: `Bearer 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`,
                   },
                 }
               )
