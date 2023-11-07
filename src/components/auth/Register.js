@@ -25,7 +25,7 @@ const Register = () => {
 
     try {
       const response = await axios.post(
-        'https://panel.stat-gurteam.info/api/register',
+        'http://localhost:4004/api/register',
         formData
       )
       if (response) {

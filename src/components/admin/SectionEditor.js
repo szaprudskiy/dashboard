@@ -76,7 +76,7 @@ const SectionEditor = () => {
       setOpenAIAutoReplyEnabled(false)
     } else {
       axios
-        .get(`https://panel.stat-gurteam.info/api/sections/${sectionId}`, {
+        .get(`http://localhost:4004/api/sections/${sectionId}`, {
           withCredentials: true,
         })
         .then((response) => {
@@ -141,7 +141,7 @@ const SectionEditor = () => {
               console.log('comment', comment)
               try {
                 const existingCommentResponse = await axios.post(
-                  'https://panel.stat-gurteam.info/api/checkcomment',
+                  'http://localhost:4004/api/checkcomment',
                   {
                     commentId: comment.id,
                   }
@@ -186,7 +186,7 @@ const SectionEditor = () => {
               )
 
               // Сохраняем информацию о комментарии в базе данных
-              await axios.post('https://panel.stat-gurteam.info/api/comment', {
+              await axios.post('http://localhost:4004/api/comment', {
                 postId: selectedSection.postId,
                 commentId: comment.id,
                 message: autoReplyText,
@@ -238,7 +238,7 @@ const SectionEditor = () => {
             async (comment) => {
               try {
                 const existingCommentResponse = await axios.post(
-                  'https://panel.stat-gurteam.info/api/checkcomment',
+                  'http://localhost:4004/api/checkcomment',
                   {
                     commentId: comment.id,
                   }
@@ -265,6 +265,8 @@ const SectionEditor = () => {
 
             if (existingComment === null) {
               // Если комментарий не существует в базе данных, отправляем автоматический ответ
+              const apikey = process.env.REACT_APP_API_KEY
+
               const openaiResponse = await axios.post(
                 // https://api.openai.com/v1/engines/gpt-3.5-turbo-16k/completions
                 // https://api.openai.com/v1/engines/text-davinci-002/completions
@@ -280,7 +282,7 @@ const SectionEditor = () => {
                 {
                   headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer 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`,
+                    Authorization: `Bearer ${apikey}`,
                   },
                 }
               )
@@ -302,7 +304,7 @@ const SectionEditor = () => {
               )
 
               // Сохраняем информацию о комментарии в базе данных
-              await axios.post('https://panel.stat-gurteam.info/api/comment', {
+              await axios.post('http://localhost:4004/api/comment', {
                 postId: selectedSection.postId,
                 commentId: comment.id,
                 message: openaiReply,
@@ -350,7 +352,7 @@ const SectionEditor = () => {
 
     axios
       .post(
-        'https://panel.stat-gurteam.info/api/comment',
+        'http://localhost:4004/api/comment',
         {
           postId: selectedSection.postId,
           commentId: replyTo.id,
@@ -418,7 +420,7 @@ const SectionEditor = () => {
         let response
         if (isNewSection) {
           response = await axios.post(
-            'https://panel.stat-gurteam.info/api/create',
+            'http://localhost:4004/api/create',
             sectionData,
             {
               withCredentials: true,
@@ -426,7 +428,7 @@ const SectionEditor = () => {
           )
         } else {
           response = await axios.put(
-            `https://panel.stat-gurteam.info/api/section/${sectionId}`,
+            `http://localhost:4004/api/section/${sectionId}`,
             sectionData,
             {
               withCredentials: true,
@@ -447,7 +449,7 @@ const SectionEditor = () => {
   const handleDeleteSection = () => {
     if (sectionId) {
       axios
-        .delete(`https://panel.stat-gurteam.info/api/delete/${sectionId}`, {
+        .delete(`http://localhost:4004/api/delete/${sectionId}`, {
           withCredentials: true,
         })
         .then((response) => {
@@ -465,12 +467,9 @@ const SectionEditor = () => {
 
   const loadSections = async () => {
     try {
-      const response = await axios.get(
-        'https://panel.stat-gurteam.info/api/sections',
-        {
-          withCredentials: true,
-        }
-      )
+      const response = await axios.get('http://localhost:4004/api/sections', {
+        withCredentials: true,
+      })
       const loadedSections = response.data.sections
 
       // Обновите состояние хранилища Redux с помощью dispatch
