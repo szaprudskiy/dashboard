@@ -210,7 +210,7 @@ const SectionEditor = () => {
       if (!intervalId) {
         const id = setInterval(() => {
           dispatch(fetchCommentsAndSendAutoReply())
-        }, 5000)
+        }, 600000)
         dispatch(setIntervalId(id))
         console.log('Запущен интервал', id)
       }
@@ -333,7 +333,7 @@ const SectionEditor = () => {
     if (!intervalIdOpenAI) {
       const id = setInterval(() => {
         dispatch(fetchCommentsAndSendAutoReplyApi()) // рекурсивный вызов функции через интервал
-      }, 5000) // интервал в миллисекундах (5 секунд в данном случае)
+      }, 600000) // интервал в миллисекундах (5 секунд в данном случае)
       dispatch(setIntervalIdOpenAI(id)) // сохраняем ID интервала в Redux store
       console.log('1', id)
     }
